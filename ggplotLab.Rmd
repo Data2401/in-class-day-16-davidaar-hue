@@ -1,0 +1,309 @@
+---
+title: "Practice with dplyr and ggplot2"
+author: "Dr. Shoemaker"
+date: "DATA 2401"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Fancy Histograms!
+
+We'll start by making some histograms.
+
+```{r}
+#install.packages("dslabs")
+library(dslabs) 
+data(heights)
+glimpse(heights)
+```
+
+This data is the heights of humans, divided by their biological sex.
+
+Use ggplot to make a histogram of all of the heights:
+
+```{r}
+
+
+```
+
+Change up the binwidth and see how the plots change. Try 1, 5, 10, and 20
+
+```{r}
+
+```
+
+Smooth this out to an emperical density with `geom_density()`
+
+```{r}
+
+```
+
+Use a new argument in the `aes()`, `group =` to split this density by sex
+
+```{r}
+
+```
+
+OR we can do it with `color` or `fill.` If you say you want to color by sex, R knows that you want a different curve for each of them.
+
+```{r}
+
+
+```
+
+If you've used fill, then there is now a slight issue that they are overlapped. We can fix this with alpha transparency!
+
+```{r}
+
+
+```
+
+Let's make some boxplots of the same information.
+
+```{r}
+
+```
+
+## Quantatitive summaries:  
+
+Find the mean and median overall. 
+
+```{r}
+
+```
+
+Find the mean and median for both groups. 
+
+```{r}
+
+
+```
+
+How tall is the tallest woman? How short is the shortest man? 
+
+```{R}
+
+
+```
+
+Use your summary table and pipe it to a ggplot to make a bar graph showing the mean of both groups. 
+
+```{R}
+
+
+```
+
+## Presidental Elections Data
+
+```{r}
+# install.packages("pscl")
+library(pscl) # loads in the package that has this data. 
+## You might need to install this...
+
+# data for presidental elections
+votedata <-  presidentialElections
+glimpse(votedata)
+```
+
+Let's look at the democratic vote by state for 2000. We can't use `geom_bar` for a bar chart, since we have the category in one variable and the "height" of the bar in another. We need `geom_col()`
+
+Make a bar graph of the democratic vote by state in 2000. 
+
+```{r}
+
+
+
+```
+
+Well this looks awful. We have two options: swap the x and y or the more fun sounding... Coordinate flip! 
+
+Use `coord_flip()` on the previous graph to make it better. 
+
+```{r fig.height=7, fig.width=5}
+
+
+
+```
+
+I don't love the squashed together coordinates, but it's a display window issue.
+
+So. This is a helpful graph, but it would be *more* helpful if it was ordered. 
+Use `x = reorder(x_variable, y_variable)` in `aes()` to order the x variable by the y variable
+
+```{r}
+
+
+
+```
+
+So, what if I want to see what the north and south states did different? 
+
+start with a facet_wrap using the `south` variable:
+
+```{r}
+
+
+```
+
+Okay, that's not great. Lets *color* by south instead.
+
+```{r}
+
+
+```
+
+I'm a good data scientist, so I want my plot to have a name! and my axes to have lables! Use `labs` to add a title, subtitle, and x and y labels.
+
+```{r, eval = F}
+
+
+```
+
+You can move the legend with `theme(legend.position = "bottom")`
+
+```{r, eval = F}
+
+
+
+```
+
+What else could we facet by? years! Let's filter to year in 2008 and 2016, then facet by years.
+
+```{r}
+
+
+
+```
+
+We need to know who won! We could add a vertical line at 50 for who got more, to indicate the majority of votes. Adding the layer `geom_hline()` adds a horizontal line. (What do you guess `geom_vline()` would do?)
+
+```{r}
+
+
+```
+
+### Getting fancy with a map!
+
+When using geom_polygon or geom_map, you will typically need two data frames:
+
+-   one contains the coordinates of each polygon (positions)
+-   the other the values associated with each polygon (values).
+
+An id variable links the two together. 
+
+Run the below example code to get map graphs for votes in 2008 and then 2016. 
+
+```{r}
+library(maps)
+votedata$state <- tolower(votedata$state)  ## states need to be lowercase for linking
+
+states_map <- map_data("state") ## this gives us the lat and long for each point of each state.
+  
+map_plot <-  ggplot(data =  votedata %>% filter(year == 2008), aes(map_id = state)) +
+    geom_map(aes(fill = demVote), map = states_map) +
+    expand_limits(x = states_map$long, y = states_map$lat)
+
+map_plot  
+```
+
+```{r}
+map_plot <-  ggplot(data =  votedata %>% filter(year == 2016), aes(map_id = state)) +
+  geom_map(aes(fill = demVote), map = states_map)+
+  expand_limits(x = states_map$long, y = states_map$lat)
+
+map_plot  
+```
+
+What if I want a map that shows which of the states are "south"? What do I change?
+
+```{r}
+
+
+```
+
+
+### Some more dplyr practice
+
+I want to know the average democratic vote for N vs S, by year.
+
+First, find the average democratic votes for the north and the south, every year. You'll need to do a *double* `group_by()` here. You do it in one call of the function.  
+
+```{r}
+
+
+```
+
+Then, let's plot that! Pipe the result of your group_by and summarize to ggplot and geom_line(), with year on the x axis and your summarized value on the y axis. Color by the `south` variable. 
+
+```{r}
+
+
+```
+
+## Layering plots!
+
+Penguins!
+
+```{r}
+library(palmerpenguins)
+glimpse(penguins)
+```
+
+We can use boxplots to visualize the distribution of weight (body_mass_g) within each species:
+
+```{r}
+
+
+```
+
+What if we also want the points? Layering!! Add a geom_point to your existing boxplot. geom_boxplot + geom_point!
+
+```{r}
+
+
+```
+
+But, these are all stacked up... to actually see them, use "geom_jitter" instead of points
+
+```{r}
+
+
+```
+
+How to get the boxplots on top? The layers are plotted in the order you give them, so change the ordering to geom_point + geom_boxplot. (You might want to change the alpha on the boxplot to be able to see the plots under them)
+
+```{r}
+
+
+
+```
+
+Maybe let's try replacing the boxplot with a `geom_violin()`?
+
+```{r}
+
+
+
+```
+
+## More Practice with Penguins 
+
+-   Count the number of male and female penguins for each species.
+-   Find the average penguin mass for each island
+-   Find the average bill length by sex
+-   Make a plot of bill_length and bill_depth, but only for the female penguins.
+-   Make a plot of flipper length and body mass, faceted by island and colored by species.
+-   Plot the density of the flipper length, colored by sex
+-   Plot the density of the body mass, colored by year
+
+<or, make your own similar graphs with any of the data we've used in class so far!>
+
+```{r}
+
+
+
+```
