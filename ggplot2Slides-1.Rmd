@@ -1,0 +1,690 @@
+---
+title: "ggplot2"
+author: "K. Shoemaker"
+date: "DATA 2401"
+output:
+  slidy_presentation: default
+  ioslides_presentation: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+
+install.packages("ggthemes")
+
+```
+
+## `ggplot2`
+
+We'll talk next about how to use a language for plotting, `ggplot2`
+
+First up, install the package:
+
+```{r, eval = F}
+#install.packages("ggplot2", dependencies = T)
+```
+
+## Base vs `ggplot2`
+
+Why `ggplot2` instead of the "base" graphics?
+
+-   Base graphics are kinda clunky. It's harder work to get them looking nice.
+-   The learning curve is steep, but worth it in the long run.
+-   Similar to dplyr, it has a language, and that language is dataframe friendly.
+-   Publication quality figures with a little work.
+
+## Examples!
+
+Iris scatter plot, with 2D density lines:
+
+```{r, echo = F}
+library(tidyverse)
+
+iris %>% ggplot( aes(Sepal.Length, Sepal.Width, color = Species, shape = Species)) +
+  geom_point() +
+  geom_density2d() +
+  ggtitle('IRIS') +
+  theme_light()
+```
+
+------------------------------------------------------------------------
+
+Faceted smoothing of the Iris data:
+
+```{r, echo = FALSE}
+iris %>%
+  mutate(Species = 'ALL') %>%
+  bind_rows(iris) %>%
+  ggplot(aes(Petal.Length, Petal.Width, color = Species)) +
+  geom_point() +
+  geom_smooth(formula = y~x,method = "loess") +
+  xlab('Petal Length') +
+  ylab('Petal Width') +
+  facet_wrap(~Species, scales = 'free') +
+  theme_bw()
+```
+
+------------------------------------------------------------------------
+
+"Tufte" style (the famous old "chart junk" graphics guy)
+
+```{r, echo = F}
+mtcars %>%
+  rownames_to_column() %>%
+  mutate(rowname = forcats::fct_reorder(rowname, mpg)) %>%
+  ggplot(aes(rowname, mpg, label = rowname)) +
+  geom_point() +
+  geom_text(nudge_y = .3, hjust = 'left') +
+  coord_flip() +
+  ylab('Miles per gallon fuel consumption') +
+  ylim(10, 40) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0, size = 16),
+        axis.title.x = element_text(face = 'bold'),
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y = element_blank())
+```
+
+------------------------------------------------------------------------
+
+A bubble plot with `mtcars`:
+
+```{r, echo = F}
+mtcars %>%
+  ggplot(aes(mpg, qsec, size = disp, color = as.factor(am))) +
+  geom_point() +
+  scale_colour_discrete(name  ="Gear",
+                        breaks=c(0, 1),
+                        labels=c("Manual", "Automatic")) +
+  scale_size_continuous(name = 'Displacement') +
+  xlab('Miles per gallon') +
+  ylab('1/4 mile time') +
+  theme_light()
+```
+
+------------------------------------------------------------------------
+
+A polar barplot of the mean `diamond` price per cut AND color.
+
+```{r, echo = F}
+diamonds2plot <- diamonds %>%
+  group_by(cut, color) %>%
+  summarise(price = mean(price)) %>%
+  arrange(color, price) %>%
+  ungroup() %>%
+  mutate(id = row_number(),
+         angle = 90 - 360 * (id - 0.5) / n())
+
+diamonds2plot  %>%
+  ggplot(aes(factor(id), price, fill = color, group = cut, label = cut)) +
+  geom_bar(stat = 'identity', position = 'dodge') +
+  geom_text(hjust = 0, angle = diamonds2plot$angle, alpha = .5) +
+  coord_polar() +
+  ggtitle('Mean dimond price') +
+  ylim(-3000, 7000) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5, size = 16, face = 'bold'))
+```
+
+------------------------------------------------------------------------
+
+The economist theme:
+
+```{r, echo = F}
+economics %>%
+  ggplot(aes(date, uempmed)) +
+  geom_line() +
+  expand_limits(y  = 0) +
+  ggtitle('Median duration of unemployment [weeks]') +
+  ylab('Median duration of unemployment [weeks]') +
+  ggthemes::theme_economist_white() +
+  theme(axis.title.x = element_blank())
+```
+
+## The Basics
+
+-   **ggplot** - the main function where you specify the dataframe and the variables to plot
+-   **geoms** - geometric objects that specify how the plot will be
+    -   geom_bar(), geom_point(), geom_bar(), geom_line(), many *many* more.
+-   **aes** - the "aesthetics" of how it will look
+    -   shape, transparency, color, fill, line type.
+-   **scales** - how the data will be plotted.
+    -   continuous, discrete, log, etc.
+
+## What that looks like
+
+```{r, eval = F}
+ggplot(data = dataset, mapping = aes(x = x_variable, y = y_variable)) +
+   geom_xxx() +
+   other options
+```
+
+-   Specify your data and variables inside the `ggplot` function.
+-   Everything else gets layered on top of this, such as the geometric objects or statistical models
+
+## Your First `ggplot`
+
+The `iris` dataset:
+
+```{r}
+library(tidyverse)
+head(iris)
+```
+
+## The Plot!
+
+```{r, fig.height = 4}
+ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) + geom_point()
+```
+
+Note: this is the basis of the first plot in the slides!
+
+## Customization
+
+`ggplots` are almost infinitely customizeable:
+
+-   Titles/labels
+-   colors
+-   shapes
+
+For more information than I could ever give you:
+
+-   <https://ggplot2.tidyverse.org>
+-   <https://ggplot2-book.org/>
+
+## Increase Point Size
+
+```{r}
+ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width)) + geom_point(size = 3)
+```
+
+## Add Color
+
+```{r}
+ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) + geom_point(size = 3)
+```
+
+## Point Shape by Species
+
+```{r}
+ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species, shape = Species)) + geom_point(size = 3)
+```
+
+## The plot from before
+
+```{r}
+ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species, shape = Species)) +
+  geom_point() +
+  geom_density2d() + # adds a layer with the density lines
+  ggtitle('IRIS') +
+  theme_light()
+```
+
+## Aesthetics
+
+What the different aesthetics do for each kind of variable:
+
+| Aesthetic | Discrete | Continuous |
+|------------------------|------------------------|------------------------|
+| color | rainbow of colors | gradient |
+| size | discrete steps of size | relationship between radius and variable |
+| shape | different shape for each | shouldn't and doesn't work |
+
+## Exercise
+
+Make a small subset of the diamonds data:
+
+```{r}
+d2 <- sample_n(diamonds,1000)
+```
+
+Then generate this plot:
+
+> \*\* removed image so you can knit the file \*\*
+
+```{r, echo = T}
+
+```
+
+## Boxplots!
+
+As always, you can see the help via `?geom_boxplot()` to see your options for arguments.
+
+```{r}
+ggplot(mpg, aes(x = class, y = hwy)) +
+  geom_boxplot()
+
+# examples of added things: 
+# outlier.color = "red"
+# notch = TRUE
+
+```
+
+## Histograms
+
+It is common to "save" your work as you go along, building up the plot you want and updating the object as you go along.
+
+```{r}
+h <- ggplot(faithful, aes(x = waiting))
+h + geom_histogram(binwidth = 5)
+```
+
+And then, you can mess around with different things to try them out:
+
+```{r}
+# use that same aes setting in h with a new geom for a new type of plot! 
+h + geom_freqpoly(binwidth = 5)
+```
+
+```{r}
+# save as finished product
+h <- h + geom_freqpoly(binwidth = 5)
+```
+
+## Exercise:
+
+Make a histogram of the carat variable in the diamonds dataset that is available when you load the tidyverse package.
+
+Experiment with different binwidths. What binwidth reveals the most interesting patterns?
+
+There is an additional argument type that is important here - set `binwidth = 1` and look at the far left bin. Add the argument `boundary = 0` to the geom_hist. Why is this better?
+
+```{r}
+
+```
+
+## Titles and Labels
+
+Labels are added with the `labs()` layer. There are many different possibilities, you don't need to use them all every time.
+
+Remember our weird upturned smoother from last class? This example from R4DS uses the subtitle to explain it (and a caption to cite the data).
+
+```{r message=FALSE}
+rds <- ggplot(mpg, aes(x = displ, y = hwy)) +
+  geom_point(aes(color = class)) +
+  geom_smooth(se = FALSE) +
+  labs(
+    x = "Engine displacement (L)",
+    y = "Highway fuel economy (mpg)",
+    color = "Car type",
+    title = "Fuel efficiency generally decreases with engine size",
+    subtitle = "Two seaters (sports cars) are an exception because of their light weight",
+    caption = "Data from fueleconomy.gov"
+  )
+
+rds
+```
+
+## Change It Up
+
+You can change things like color manually:
+
+```{r}
+ggplot(faithful, aes(x = waiting)) + geom_histogram(binwidth = 10, fill = "orange", color = "navy")
+```
+
+------------------------------------------------------------------------
+
+Or you can change the whole look using a `theme`
+
+```{r}
+ggplot(faithful, aes(x = waiting)) + 
+  geom_histogram(binwidth = 10) + 
+  theme_minimal()
+```
+
+------------------------------------------------------------------------
+
+```{r}
+
+
+rds + theme_dark()
+rds + theme_linedraw()
+rds + theme_void()
+
+library(ggthemes)
+rds + theme_solarized()
+rds + theme_economist()
+rds + theme_fivethirtyeight()
+```
+
+## Exercise:
+
+1.  From the `mpg` data, plot the relationship between `displ` and `hwy`.
+
+-   Create a scatter plot of displ (engine size) vs. hwy (highway mpg) using ggplot().
+-   Add geom_point() to display the points.
+-   Customize the plot by adding a theme, title and axis labels.
+
+```{r}
+
+```
+
+2.  Modify the scatter plot from Exercise 1 by coloring points based on the class variable.
+
+-   Change the size of the points based on the cyl (number of cylinders) variable.
+-   Try using shape instead of size. What happens?
+
+```{r}
+
+```
+
+Before running the command, what will each of these show you? What will they look like?
+
+```{r, eval = F}
+ggplot(ggplot2::mpg, aes(cty, hwy, color = factor(cyl))) + geom_jitter()
+ggplot(ggplot2::mpg, aes(cty, hwy, color = factor(cyl))) + geom_point()
+
+
+ggplot(diamonds, aes(carat, price)) + geom_point()
+
+ggplot(economics, aes(date, unemploy)) + geom_line() 
+
+ggplot(mpg, aes(cty)) + geom_histogram()
+```
+
+## Bar Graphs
+
+Use `geom_bar()` for a bar chart. You can change the color with either `color =`
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, color = cut))
+```
+
+## The better option...
+
+or `fill =`
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = cut))
+```
+
+## Stacked Bars
+
+What happens if we do a fill with a different variable?
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity))
+```
+
+## Dodged or Filled Bars
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity), position = "dodge")
+
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity), position = "fill")
+```
+
+## Exercise:
+
+1.  Make a bar plot of species of penguins, where you assign species to the y aesthetic. How is this plot different?
+
+2.  Create a bar chart showing the count of each car class in the mpg dataset.
+
+-   Experiment with fill aesthetics to color bars by drv (drive type: front, rear, 4WD).
+
+```{r}
+
+```
+
+## Bar Graphs for pre-counted data
+
+Suppose you already have the counts:
+
+```{R}
+mpg %>% count(class)
+```
+
+You would then use `geom_col()` to make this graph, this geom lets you pass an x category and a y count.
+
+```{r}
+mpg %>% count(class) %>% ggplot(aes(x = class, y = n)) + geom_col()
+```
+
+## Scales
+
+A scatterplot of the gapminder dataset.
+
+General statistics note: When data is "squashed" up against 0 like this, you often want to take a `log()` transform of the data.
+
+```{r}
+library(gapminder)
+p <- ggplot(gapminder, aes(x = gdpPercap, y = lifeExp)) # just initializes
+p + geom_point()
+```
+
+## Log Transform
+
+We do this with a `scale`!
+
+```{r}
+p + geom_point() + scale_x_log10() ## Do we like this? 
+
+# Yes - let's make that stick
+p <- p + geom_point() + scale_x_log10()
+```
+
+## Add Color
+
+```{r}
+#  continent by color: MAP continent variable to aesthetic color
+p <- ggplot(gapminder, aes(x = gdpPercap, y = lifeExp, color = continent)) 
+p <- p +  geom_point() + scale_x_log10() 
+p
+```
+
+## Transparency and Size
+
+The previous plot is what we would call *overplotted*... it's busy and you can't really fully see.
+
+We changed the size of the points earlier, but now we're going to change the size and make them more transparent.
+
+```{r}
+ggplot(gapminder, aes(x = gdpPercap, y = lifeExp, color = continent)) + 
+  scale_x_log10() +
+  geom_point(alpha = 1/2, size = 2)
+```
+
+## Adding Fitted Lines
+
+```{r}
+# add a fitted, smoothed, curve 
+p + geom_point() + geom_smooth()
+```
+
+## Remove the Standard Error Curves
+
+We can remove these intervals by setting the standard error equal to `F`
+
+```{r}
+p + geom_point() + geom_smooth(lwd = 2, se = FALSE)
+```
+
+Note: these are often a good idea to keep in... they let you know the general "strength" of the model.
+
+## Fit a Linear Model
+
+You can choose which method the smooth uses, in this case we choose "lm", for "linear model" - gives you the linear regression line for these variables.
+
+```{r}
+p + geom_point() + geom_smooth(lwd = 3, se = FALSE, method = "lm")
+```
+
+## Seeing the Different Continents
+
+If we're interested in which continent has what trend, we can't see that super well at this point.
+
+So, we'll split them up with something called `facet`s.
+
+```{r, echo = F}
+ggplot(gapminder, aes(x = gdpPercap, y = lifeExp, color = continent)) + 
+  scale_x_log10()  + geom_point(alpha = 0.5) +
+  geom_smooth(lwd = 1, se = FALSE) +
+  facet_wrap(~ continent)
+```
+
+## Facetting
+
+Facetting is a way you can put those factors to work for you.
+
+`facet_wrap` splits up the plots by that factor, giving the plots separately, along with the legend.
+
+```{r}
+p + geom_point() +
+  facet_wrap(~ continent)
+```
+
+```{r}
+p + geom_point(alpha = (1/3), size = 3) +
+  facet_wrap(~ continent) +
+  geom_smooth(lwd = 2, se = FALSE)
+```
+
+## Facet Grid
+
+Facetting has two options:
+
+The one we've been using, 'facet_wrap()\` which makes a 1d ribbon wrapped into 2d.
+
+OR you can make a controlled grid of your data using two variables.
+
+`facet_grid()`: 2d grid, `rows ~ cols`,`.` for no split
+
+```{r}
+ggplot(mpg, aes(cty, hwy)) + geom_point() + facet_grid(drv ~ cyl )
+```
+
+## Exercises
+
+For the gapminder data:
+
+-   Plot lifeExp against year\
+-   make mini-plots, split out by continent HINT: use facet_wrap()
+-   change the theme to black and white, `theme_bw()`
+-   add a fitted smooth line, w/ or w/o facetting\
+-   use `dplyr::filter()` to plot lifeExp against year for just one country or continent
+
+```{r}
+
+# Plot lifeExp against year
+gapminder %>% ggplot(aes(x = year,y = lifeExp)) + geom_point()
+
+
+# make mini-plots, split out by continent HINT: use facet_wrap()
+
+gapminder %>% ggplot(aes(x = year,y = lifeExp)) + geom_point() + facet_wrap(~ continent)
+
+# change the theme to black and white, `theme_bw()`
+
+gapminder %>% ggplot(aes(x = year,y = lifeExp)) + geom_point() + facet_wrap(~ continent) + theme_bw()
+
+# add a fitted smooth line, w/ or w/o facetting  
+
+gapminder %>% ggplot(aes(x = year,y = lifeExp)) + geom_point() + theme_bw() + geom_smooth()
+
+# use `dplyr::filter()` to plot lifeExp against year for just one country or continent
+
+gapminder %>% filter( continet == "Europe" ) %>% ggplot(aes(x = factor (year) ,y = lifeExp)) + geom_point() + theme_bw() + geom_smooth()
+
+
+```
+
+## Saving Our Work
+
+In R, you can always do a manual click-save to save/export plots, **but** that is usually a pain, and never reproducible. - Suppose you need to make a plot for every state. Are you going to go in and click for each state? No.
+
+```{r, eval = F}
+print(p) ## prints to the "plots" output
+ggsave("your_file_name.pdf") ## saves the current plot output to your current working directory
+ggsave("your_file_name.pdf",plot = p) ## saves the plot of your object p to your current working directory
+```
+
+## Line Plots
+
+How can we "connect the dots" for one country? i.e. make a spaghetti plot?
+
+```{r}
+#' plot lifeExp against year
+y <- ggplot(gapminder, aes(x = year, y = lifeExp))
+
+y + facet_wrap(~ continent) + geom_line() # uh, no
+```
+
+## Much Better
+
+Think through what you want to do. We want the lines grouped by country, so we find the command that does that.
+
+```{r}
+y + facet_wrap(~ continent) + geom_line(aes(group = country)) # yes!
+```
+
+## Subsetting
+
+Sadly, ggplot() does not have a 'subset =' argument. So, do that 'on the fly' with `subset(..., subset = ...)` or by piping to filter
+
+```{r, eval = F}
+ggplot(subset(gapminder, country == "Canada"),
+       aes(x = year, y = lifeExp)) + geom_line() + geom_point()
+```
+
+```{r}
+ggplot(gapminder %>% filter(country == "Canada"),
+       aes(x = year, y = lifeExp)) + geom_line() + geom_point()
+```
+
+## Combos with `dplyr`
+
+We can just look at four countries:
+
+```{r}
+jCountries <- c("Canada", "Denmark", "Poland", "Mexico")
+ggplot(gapminder::gapminder %>% filter(country %in% jCountries),
+       aes(x = year, y = lifeExp, linetype = country)) + geom_line() + geom_point()
+```
+
+## All Sorts of Options and Extras
+
+Remember this?
+
+```{r}
+ggplot(gapminder, aes(x = gdpPercap, y = lifeExp)) +  scale_x_log10()  + geom_point()
+```
+
+------------------------------------------------------------------------
+
+Let's make it a heatmap!
+
+```{r}
+ggplot(gapminder, aes(x = gdpPercap, y = lifeExp)) +
+  scale_x_log10() + geom_bin2d()
+```
+
+## Summary
+
+The challenge of visualization, like any other design problem, is to identify an optimal solution with your constraints.
+
+Consider:
+
+-   The question you're answering
+-   The type of data you have
+-   The limitations of the human visual processing system (aka DO NOT USE PIE CHARTS)
+-   The spatial limitations of your medium
+    -   Pixels on the screen, inches on the page, dimension of your medium.
+
+## Resources
+
+-   The documentation's reference: <https://ggplot2.tidyverse.org/reference>
+-   A "cookbook" with "recipes" for plots. <http://www.cookbook-r.com/Graphs/index.html>
+-   R for Data Science - has data visualization chapters. <https://r4ds.hadley.nz>
+-   And, finally, the cheatsheet. <http://bit.ly/ggplot2-cheatsheet>

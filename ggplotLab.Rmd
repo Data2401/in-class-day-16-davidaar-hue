@@ -1,6 +1,6 @@
 ---
 title: "Practice with dplyr and ggplot2"
-author: "Dr. Shoemaker"
+author: "David Arogunjo"
 date: "DATA 2401"
 output: html_document
 ---
@@ -26,46 +26,48 @@ This data is the heights of humans, divided by their biological sex.
 Use ggplot to make a histogram of all of the heights:
 
 ```{r}
-
-
+ht <- ggplot (heights, aes(x = height)) 
+ht + geom_histogram(fill = "blue")
 ```
 
 Change up the binwidth and see how the plots change. Try 1, 5, 10, and 20
 
 ```{r}
+ht + geom_histogram(binwidth = 3)
+
 
 ```
 
 Smooth this out to an emperical density with `geom_density()`
 
 ```{r}
-
+ht + geom_density()
 ```
 
 Use a new argument in the `aes()`, `group =` to split this density by sex
 
 ```{r}
-
+ggplot(heights, aes(x = height, group = sex)) + geom_density()
 ```
 
 OR we can do it with `color` or `fill.` If you say you want to color by sex, R knows that you want a different curve for each of them.
 
 ```{r}
-
+ggplot(heights, aes(x = height, fill = sex)) + geom_density()
 
 ```
 
 If you've used fill, then there is now a slight issue that they are overlapped. We can fix this with alpha transparency!
 
 ```{r}
-
+ggplot(heights, aes(x = height, fill = sex)) + geom_density(alpha = 0.3)
 
 ```
 
 Let's make some boxplots of the same information.
 
 ```{r}
-
+ggplot(heights, aes(x = height, fill = sex)) + geom_boxplot()
 ```
 
 ## Quantatitive summaries:  
@@ -73,28 +75,28 @@ Let's make some boxplots of the same information.
 Find the mean and median overall. 
 
 ```{r}
-
+heights %>% summarise( mean_height = mean(height), median_height = median(height))
 ```
 
 Find the mean and median for both groups. 
 
 ```{r}
-
+heights %>% group_by(sex)%>% summarise( mean_height = mean(height), median_height = median(height))
 
 ```
 
 How tall is the tallest woman? How short is the shortest man? 
 
 ```{R}
-
+heights %>% group_by(sex)%>% summarise( max_height = max(height), min_height = min(height))
 
 ```
 
 Use your summary table and pipe it to a ggplot to make a bar graph showing the mean of both groups. 
 
 ```{R}
-
-
+heights %>% group_by(sex)%>% summarise( mean_height = mean(height))%>%
+ggplot(aes(x= sex, y = mean_height, fill= sex)) + geom_col()
 ```
 
 ## Presidental Elections Data
